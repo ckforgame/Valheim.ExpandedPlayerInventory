@@ -15,6 +15,13 @@ Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinve
 
 - `playerInventoryRows`: Number of player inventory rows (min 4, max 50, default 20).
 
+## Compatibility with ValheimPlus
+
+> [!IMPORTANT]
+> If you are using **ValheimPlus**, please ensure `inventoryRows` in your ValheimPlus configuration (`valheim_plus.cfg`) is set to **`4`** (the vanilla default) or leave the `[Player]` inventory expansion disabled.
+>
+> Letting ValheimPlus expand inventory rows simultaneously will conflict with this mod's scrollbar positioning and grid layout management. Use **ExpandedPlayerInventory**'s configuration to specify your desired rows instead.
+
 ## Installation
 
 - **Using Mod Manager (r2modman / Thunderstore)**: Click **Install with Mod Manager**.
