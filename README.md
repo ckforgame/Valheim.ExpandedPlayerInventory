@@ -29,6 +29,11 @@ Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinve
   1. Install [BepInExPack Valheim](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/).
   2. Extract `ExpandedPlayerInventory.dll` into `<GameDirectory>/BepInEx/plugins/`.
 
+## Changelog
+
+- **v1.0.2**: Fixed first-time inventory open render bug where slots were displaced off-screen and invisible until reopened.
+- **v1.0.1**: Initial release with standalone scrolling inventory and ValheimPlus compatibility guidance.
+
 ## Credits & Special Thanks
 
 - **[ValheimPlus](https://github.com/Grantapher/ValheimPlus)**: Special thanks to the ValheimPlus project and its contributors for the inspiration and foundational concept of inventory scrolling and grid expansion mechanics.

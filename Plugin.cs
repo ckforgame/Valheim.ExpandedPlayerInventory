@@ -10,7 +10,7 @@ namespace ExpandedPlayerInventory
     {
         public const string ModGuid = "com.custom.expandedplayerinventory";
         public const string ModName = "ExpandedPlayerInventory";
-        public const string ModVersion = "1.0.1";
+        public const string ModVersion = "1.0.2";
 
         public static ExpandedPlayerInventoryPlugin Instance { get; private set; } = null!;
         public static ManualLogSource Log { get; private set; } = null!;

@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,22 +24,23 @@ namespace ExpandedPlayerInventory
                 var gridRect = playerGridGo.GetComponent<RectTransform>();
                 if (gridRect == null || playerGridGo.transform.parent == null) return;
 
-                if (playerGrid.m_inventory == null && Player.m_localPlayer != null)
-                {
-                    playerGrid.m_inventory = Player.m_localPlayer.GetInventory();
-                }
+                Player localPlayer = Player.m_localPlayer;
+                if (localPlayer == null) return;
+
+                var inventory = localPlayer.GetInventory();
+                if (inventory == null) return;
 
                 int configRows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
-                if (playerGrid.m_inventory != null && playerGrid.m_inventory.GetHeight() < configRows)
+                if (inventory.GetHeight() < configRows)
                 {
-                    playerGrid.m_inventory.SetHeight(configRows);
-                    playerGrid.UpdateInventory(playerGrid.m_inventory, Player.m_localPlayer, gui.m_dragItem);
+                    inventory.SetHeight(configRows);
                 }
 
-                int totalRows = playerGrid.m_inventory != null
-                    ? playerGrid.m_inventory.GetHeight()
-                    : configRows;
+                // Crucial: Update player grid BEFORE any sizing or layout so elements are generated
+                // and m_gridRoot has its full expanded size immediately on the very first frame!
+                playerGrid.UpdateInventory(inventory, localPlayer, gui.m_dragItem);
 
+                int totalRows = Math.Max(inventory.GetHeight(), configRows);
                 int visibleRows = Math.Min(6, Math.Max(4, totalRows));
                 float invGridHeight = gui.m_invGridHeight > 0f ? gui.m_invGridHeight : (playerGrid.m_elementSpace > 0f ? playerGrid.m_elementSpace : 70.5f);
 
@@ -151,12 +152,22 @@ namespace ExpandedPlayerInventory
                 }
 
                 // 6. Reset view to top on opening so hotbar is visible
-                if (totalRows > 6)
+                if (totalRows > visibleRows)
                 {
+                    if (playerGrid.m_gridRoot != null)
+                    {
+                        // Ensure pivot is top-aligned to prevent Unity ScrollRect bounds displacement
+                        playerGrid.m_gridRoot.pivot = new Vector2(playerGrid.m_gridRoot.pivot.x, 1f);
+                    }
                     playerGrid.ResetView();
                     if (playerGrid.m_scrollbar != null)
                     {
                         playerGrid.m_scrollbar.value = 1f;
+                    }
+                    ScrollRect? sr = playerGridGo.GetComponent<ScrollRect>();
+                    if (sr != null)
+                    {
+                        sr.verticalNormalizedPosition = 1f;
                     }
                 }
             }
