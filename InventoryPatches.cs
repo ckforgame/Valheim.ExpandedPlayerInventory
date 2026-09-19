@@ -1,4 +1,4 @@
-﻿using HarmonyLib;
+using HarmonyLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -91,6 +91,7 @@ namespace ExpandedPlayerInventory
             if (InventoryGui.instance != null)
             {
                 InventoryGui.instance.SetInventorySize(Math.Min(6, rows));
+                InventoryGui_Show_Patch.EnsurePlayerInventoryScrollbar(InventoryGui.instance);
             }
         }
     }

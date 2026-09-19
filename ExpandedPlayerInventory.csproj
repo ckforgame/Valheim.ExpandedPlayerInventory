@@ -3,7 +3,7 @@
     <TargetFramework>net48</TargetFramework>
     <AssemblyName>ExpandedPlayerInventory</AssemblyName>
     <RootNamespace>ExpandedPlayerInventory</RootNamespace>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -46,6 +46,14 @@
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>$(ValheimPath)\valheim_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(ValheimPath)\valheim_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(ValheimPath)\valheim_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
   </ItemGroup>

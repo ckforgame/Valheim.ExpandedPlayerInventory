@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2026-09-19
+
+### Documentation
+- **Known Issues & Workaround**: Added notice and temporary workaround instructions for first-time open empty background issue.
+
+### Changed
+- **Opening Animation & Clipping Updates**: Added dynamic canvas layout and clipping synchronization during the opening animation in `InventoryGui.Update`.
+- **Pre-warming on Spawn**: Pre-initializes inventory grid elements upon player spawn.
+
 ## [1.0.2] - 2026-09-19
 
 ### Fixed
