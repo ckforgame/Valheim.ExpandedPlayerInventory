@@ -3,6 +3,9 @@
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+publish/
+dist/
+*.zip
 
 ## Visual Studio
 .vs/

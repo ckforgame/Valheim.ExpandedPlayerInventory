@@ -1,4 +1,4 @@
-﻿# ExpandedPlayerInventory
+# ExpandedPlayerInventory
 
 A standalone Valheim BepInEx mod that expands player inventory rows (up to 50 rows, default 20) with a built-in scrollbar and mouse-wheel scrolling support.
 
