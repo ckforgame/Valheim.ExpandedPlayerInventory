@@ -24,33 +24,111 @@ namespace ExpandedPlayerInventory
     [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Update))]
     public static class InventoryGui_Update_Patch
     {
+        private static int _clippingAttemptFrames = 0;
+        private const int MaxClippingAttemptFrames = 60;
+
         public static void Postfix(InventoryGui __instance)
         {
             try
             {
                 if (__instance == null || !__instance.m_animator.GetBool("visible")) return;
 
-                // While the inventory opening animation plays, ensure layout & clipping stay updated with real scale
-                if (__instance.m_shownFrames <= 20)
+                if (!InventoryGui_Show_Patch._needsClippingRefresh) return;
+
+                var playerGrid = __instance.m_playerGrid;
+                if (playerGrid == null) return;
+
+                _clippingAttemptFrames++;
+
+                // Safety: give up after MaxClippingAttemptFrames to avoid infinite loop
+                if (_clippingAttemptFrames > MaxClippingAttemptFrames)
                 {
-                    var playerGrid = __instance.m_playerGrid;
-                    if (playerGrid == null) return;
+                    InventoryGui_Show_Patch._needsClippingRefresh = false;
+                    _clippingAttemptFrames = 0;
+                    ExpandedPlayerInventoryPlugin.Log.LogWarning("Clipping refresh timed out, clearing flag.");
+                    return;
+                }
 
-                    Canvas.ForceUpdateCanvases();
+                // Wait until the panel's RectTransform has non-zero world-space size,
+                // meaning the Animator's scale transition has progressed enough for
+                // RectMask2D to compute a meaningful clipping rect.
+                var gridRect = playerGrid.GetComponent<RectTransform>();
+                if (gridRect == null) return;
 
-                    ScrollRect sr = playerGrid.GetComponent<ScrollRect>();
-                    if (sr != null && __instance.m_shownFrames <= 2)
+                Vector3 lossyScale = gridRect.lossyScale;
+                float worldHeight = gridRect.rect.height * Mathf.Abs(lossyScale.y);
+
+                // If the panel is still at or near zero scale, skip this frame
+                if (worldHeight < 1f) return;
+
+                // === Panel has real size — this is the AUTHORITATIVE setup point ===
+                // All critical state is applied HERE (not in Show postfix) because:
+                // 1. The Animator transition is complete, so clipping rects are valid
+                // 2. All other mods' Show postfixes have already run, so our state won't be undone
+                // 3. This runs on the first valid frame, giving us the final word on layout
+
+                var playerGridGo = playerGrid.gameObject;
+
+                // Re-ensure ScrollRect exists (may have been skipped if another mod set m_scrollbar first)
+                InventoryGui_Show_Patch.EnsureScrollRect(__instance);
+
+                // Re-apply inventory data and grid elements
+                Player localPlayer = Player.m_localPlayer;
+                if (localPlayer != null)
+                {
+                    var inventory = localPlayer.GetInventory();
+                    if (inventory != null)
                     {
-                        sr.StopMovement();
-                        sr.verticalNormalizedPosition = 1f;
-                    }
+                        int configRows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
+                        if (inventory.GetHeight() < configRows)
+                        {
+                            inventory.SetHeight(configRows);
+                        }
 
-                    RectMask2D mask = playerGrid.GetComponent<RectMask2D>();
-                    if (mask != null)
-                    {
-                        mask.PerformClipping();
+                        // Force grid to regenerate all slot elements with current inventory state
+                        playerGrid.UpdateInventory(inventory, localPlayer, __instance.m_dragItem);
                     }
                 }
+
+                // Lock pivot to top so ScrollRect doesn't displace items downward
+                if (playerGrid.m_gridRoot != null)
+                {
+                    playerGrid.m_gridRoot.pivot = new Vector2(playerGrid.m_gridRoot.pivot.x, 1f);
+                    playerGrid.m_gridRoot.anchoredPosition = Vector2.zero;
+
+                    // Force layout rebuild on content root so grid elements are properly sized
+                    LayoutRebuilder.ForceRebuildLayoutImmediate(playerGrid.m_gridRoot);
+                }
+
+                // Force canvas update
+                Canvas.ForceUpdateCanvases();
+
+                // Lock scroll to top (hotbar visible)
+                ScrollRect sr = playerGridGo.GetComponent<ScrollRect>();
+                if (sr != null)
+                {
+                    sr.StopMovement();
+                    sr.verticalNormalizedPosition = 1f;
+                }
+
+                if (playerGrid.m_scrollbar != null)
+                {
+                    playerGrid.m_scrollbar.value = 1f;
+                }
+
+                // Perform clipping with now-valid rect sizes
+                RectMask2D mask = playerGridGo.GetComponent<RectMask2D>();
+                if (mask != null)
+                {
+                    mask.PerformClipping();
+                }
+
+                // Done — clear the flag
+                int completedFrame = _clippingAttemptFrames;
+                InventoryGui_Show_Patch._needsClippingRefresh = false;
+                _clippingAttemptFrames = 0;
+
+                ExpandedPlayerInventoryPlugin.Log.LogInfo($"Deferred clipping refresh completed on attempt {completedFrame}, worldHeight={worldHeight:F1}");
             }
             catch (Exception e)
             {
@@ -60,11 +138,56 @@ namespace ExpandedPlayerInventory
     }
 
     [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Show))]
+    [HarmonyPriority(Priority.Low)] // Run AFTER other mods' Show postfixes
     public static class InventoryGui_Show_Patch
     {
+        // Flag: set to true by Show postfix, consumed by Update patch
+        // after the Animator transition completes and the panel has real size.
+        internal static bool _needsClippingRefresh = false;
+
         public static void Postfix(InventoryGui __instance)
         {
             EnsurePlayerInventoryScrollbar(__instance);
+        }
+
+        /// <summary>
+        /// Ensures ScrollRect and ScrollRectEnsureVisible components exist on playerGrid,
+        /// regardless of whether we created the scrollbar or another mod did.
+        /// Called from both SetupScrollUI (initial setup) and Update (deferred re-check).
+        /// </summary>
+        public static void EnsureScrollRect(InventoryGui gui)
+        {
+            if (gui == null || gui.m_playerGrid == null) return;
+
+            var playerGrid = gui.m_playerGrid;
+            var playerGridGo = playerGrid.gameObject;
+            var gridRect = playerGridGo.GetComponent<RectTransform>();
+            if (gridRect == null) return;
+
+            // Ensure ScrollRect exists and is properly configured
+            ScrollRect scrollRect = playerGridGo.GetComponent<ScrollRect>();
+            if (scrollRect == null)
+            {
+                scrollRect = playerGridGo.AddComponent<ScrollRect>();
+            }
+            scrollRect.content = playerGrid.m_gridRoot;
+            scrollRect.viewport = gridRect;
+            scrollRect.verticalScrollbar = playerGrid.m_scrollbar;
+            scrollRect.horizontal = false;
+            scrollRect.vertical = true;
+            scrollRect.movementType = ScrollRect.MovementType.Clamped;
+            scrollRect.scrollSensitivity = playerGrid.m_elementSpace > 0f ? playerGrid.m_elementSpace : 70.5f;
+            scrollRect.inertia = false;
+            scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+
+            // Ensure ScrollRectEnsureVisible for gamepad support
+            ScrollRectEnsureVisible ensure = playerGridGo.GetComponent<ScrollRectEnsureVisible>();
+            if (ensure == null)
+            {
+                ensure = playerGridGo.AddComponent<ScrollRectEnsureVisible>();
+                ensure.Initialize();
+            }
+            playerGrid.m_ensureVisible = ensure;
         }
 
         public static void SetupScrollUI(InventoryGui gui)
@@ -150,23 +273,6 @@ namespace ExpandedPlayerInventory
                         }
                     }
 
-                    // 4. Ensure ScrollRect on playerGrid
-                    ScrollRect scrollRect = playerGridGo.GetComponent<ScrollRect>() ?? playerGridGo.AddComponent<ScrollRect>();
-                    scrollRect.content = playerGrid.m_gridRoot;
-                    scrollRect.viewport = gridRect;
-                    scrollRect.verticalScrollbar = scrollbar;
-                    scrollRect.horizontal = false;
-                    scrollRect.vertical = true;
-                    scrollRect.movementType = ScrollRect.MovementType.Clamped;
-                    scrollRect.scrollSensitivity = playerGrid.m_elementSpace > 0f ? playerGrid.m_elementSpace : 70.5f;
-                    scrollRect.inertia = false;
-                    scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
-
-                    // 5. Gamepad scroll follow
-                    ScrollRectEnsureVisible ensure = playerGridGo.GetComponent<ScrollRectEnsureVisible>() ?? playerGridGo.AddComponent<ScrollRectEnsureVisible>();
-                    ensure.Initialize();
-                    playerGrid.m_ensureVisible = ensure;
-
                     ExpandedPlayerInventoryPlugin.Log.LogInfo($"Player inventory scrollbar created successfully (configRows={configRows}, visibleRows={visibleRows})");
                 }
                 else
@@ -176,7 +282,8 @@ namespace ExpandedPlayerInventory
             }
             else
             {
-                // If scrollbar already exists, update height and ensure active
+                // If scrollbar already exists (set by us on Awake, or by another mod),
+                // update height and ensure active
                 playerGrid.m_scrollbar.gameObject.SetActive(true);
                 playerGrid.m_scrollbar.transform.SetAsLastSibling();
                 RectTransform? barRect = playerGrid.m_scrollbar.transform as RectTransform;
@@ -186,6 +293,10 @@ namespace ExpandedPlayerInventory
                     barRect.anchoredPosition = new Vector2(-15f, gridRect.anchoredPosition.y);
                 }
             }
+
+            // 4. Always ensure ScrollRect + ScrollRectEnsureVisible exist,
+            // even if scrollbar was created by another mod (e.g. ValheimPlus)
+            EnsureScrollRect(gui);
         }
 
         public static void EnsurePlayerInventoryScrollbar(InventoryGui gui)
@@ -198,7 +309,6 @@ namespace ExpandedPlayerInventory
                 SetupScrollUI(gui);
 
                 var playerGrid = gui.m_playerGrid;
-                var playerGridGo = playerGrid.gameObject;
 
                 Player localPlayer = Player.m_localPlayer;
                 if (localPlayer == null) return;
@@ -212,48 +322,17 @@ namespace ExpandedPlayerInventory
                     inventory.SetHeight(configRows);
                 }
 
-                // Crucial: Update player grid BEFORE any sizing or layout so elements are generated
-                // and m_gridRoot has its full expanded size immediately on the very first frame!
+                // Pre-populate grid elements so m_gridRoot has its full size
                 playerGrid.UpdateInventory(inventory, localPlayer, gui.m_dragItem);
 
-                int totalRows = Math.Max(inventory.GetHeight(), configRows);
-                int visibleRows = Math.Min(6, Math.Max(4, totalRows));
+                // DO NOT set pivot/scroll/clipping here!
+                // Other mods' Show postfixes may still run after us and reset grid state.
+                // All critical visual state (pivot lock, scroll position, clipping) is
+                // deferred to the Update patch which runs after ALL Show postfixes and
+                // after the Animator transition gives the panel real world-space size.
+                _needsClippingRefresh = true;
 
-                // 6. Reset view to top on opening so hotbar is visible
-                if (totalRows > visibleRows)
-                {
-                    // Must call ResetView first, then immediately lock pivot to top (1f)
-                    // so ResetView cannot fall back to 0.5f!
-                    playerGrid.ResetView();
-
-                    if (playerGrid.m_gridRoot != null)
-                    {
-                        playerGrid.m_gridRoot.pivot = new Vector2(playerGrid.m_gridRoot.pivot.x, 1f);
-                        playerGrid.m_gridRoot.anchoredPosition = Vector2.zero;
-                    }
-
-                    if (playerGrid.m_scrollbar != null)
-                    {
-                        playerGrid.m_scrollbar.value = 1f;
-                    }
-
-                    ScrollRect? sr = playerGridGo.GetComponent<ScrollRect>();
-                    if (sr != null)
-                    {
-                        sr.StopMovement();
-                        sr.verticalNormalizedPosition = 1f;
-                    }
-                }
-
-                // Force layout update and clipping refresh immediately so frame 0 renders all slots
-                Canvas.ForceUpdateCanvases();
-                RectMask2D? activeMask = playerGridGo.GetComponent<RectMask2D>();
-                if (activeMask != null)
-                {
-                    activeMask.PerformClipping();
-                }
-
-                ExpandedPlayerInventoryPlugin.Log.LogInfo($"EnsurePlayerInventoryScrollbar completed: rows={totalRows}, visible={visibleRows}, rootRect={playerGrid.m_gridRoot?.rect}, rootPivot={playerGrid.m_gridRoot?.pivot}");
+                ExpandedPlayerInventoryPlugin.Log.LogInfo($"EnsurePlayerInventoryScrollbar: flag set, rows={Math.Max(inventory.GetHeight(), configRows)}, rootRect={playerGrid.m_gridRoot?.rect}");
             }
             catch (Exception e)
             {

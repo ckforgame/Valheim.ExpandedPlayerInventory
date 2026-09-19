@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4] - 2026-09-19
+
+### Fixed
+- **First-time inventory open bug (definitive fix)**: Resolved the root cause where `RectMask2D.PerformClipping()` was called during the Animator's scale-0 opening transition, causing all inventory slots to be culled as invisible. Clipping is now deferred to the Update loop and only performed after the panel reaches non-zero world-space size.
+- **Mod compatibility (ValheimPlus, etc.)**: Fixed conflict where other mods setting `m_scrollbar` before us caused `ScrollRect` and `ScrollRectEnsureVisible` to never be created. These components are now ensured independently via `EnsureScrollRect()`.
+- **Patch execution order**: Added `[HarmonyPriority(Priority.Low)]` on `InventoryGui.Show` postfix and moved all critical visual state (pivot lock, scroll position, grid update, clipping) into the deferred Update handler so it runs after all other mods' postfixes complete.
+- **Layout rebuild before clipping**: Added `LayoutRebuilder.ForceRebuildLayoutImmediate()` to ensure grid content is properly sized before clipping pass.
+
 ## [1.0.3] - 2026-09-19
 
 ### Documentation

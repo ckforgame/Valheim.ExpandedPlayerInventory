@@ -1,6 +1,6 @@
 {
   "name": "ExpandedPlayerInventory",
-  "version_number": "1.0.3",
+  "version_number": "1.0.4",
   "website_url": "https://github.com/ckforgame/Valheim.ExpandedPlayerInventory",
   "description": "Expands player inventory rows with a built-in scrollbar and mouse-wheel scrolling support.",
   "dependencies": [
