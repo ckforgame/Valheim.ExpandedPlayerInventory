@@ -3,7 +3,29 @@
 A standalone Valheim BepInEx mod that expands player inventory rows (up to 50 rows, default 20) with a built-in scrollbar and mouse-wheel scrolling support.
 
 ## Features
+
 - Configurable player inventory rows (4 to 50 rows).
 - Integrated Valheim-themed scrollbar.
 - Mouse scroll wheel and Gamepad navigation support.
 - Fully standalone: can be used with or without ValheimPlus.
+
+## Configuration
+
+Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinventory.cfg` after first launch:
+
+- `playerInventoryRows`: Number of player inventory rows (min 4, max 50, default 20).
+
+## Installation
+
+- **Using Mod Manager (r2modman / Thunderstore)**: Click **Install with Mod Manager**.
+- **Manual Installation**:
+  1. Install [BepInExPack Valheim](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/).
+  2. Extract `ExpandedPlayerInventory.dll` into `<GameDirectory>/BepInEx/plugins/`.
+
+## Credits & Special Thanks
+
+- **[ValheimPlus](https://github.com/Grantapher/ValheimPlus)**: Special thanks to the ValheimPlus project and its contributors for the inspiration and foundational concept of inventory scrolling and grid expansion mechanics.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.

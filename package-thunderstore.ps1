@@ -95,6 +95,11 @@ if (Test-Path $changelogPath) {
     [System.IO.File]::WriteAllText((Join-Path $stagingDir "CHANGELOG.md"), [System.IO.File]::ReadAllText($changelogPath), $utf8NoBom)
 }
 
+$licensePath = Join-Path $repoRoot "LICENSE"
+if (Test-Path $licensePath) {
+    [System.IO.File]::WriteAllText((Join-Path $stagingDir "LICENSE"), [System.IO.File]::ReadAllText($licensePath), $utf8NoBom)
+}
+
 # 5. Create zip archive
 Write-Host "`n[4/4] Creating zip archive..." -ForegroundColor Yellow
 
