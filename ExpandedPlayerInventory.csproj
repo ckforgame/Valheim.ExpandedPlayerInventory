@@ -1,0 +1,52 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>ExpandedPlayerInventory</AssemblyName>
+    <RootNamespace>ExpandedPlayerInventory</RootNamespace>
+    <Version>1.0.0</Version>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ValheimPath Condition="!Exists('$(ValheimPath)')">C:\Program Files (x86)\Steam\steamapps\common\Valheim</ValheimPath>
+    <ValheimPath Condition="!Exists('$(ValheimPath)')">C:\Program Files\Steam\steamapps\common\Valheim</ValheimPath>
+    <BepInExCore Condition="!Exists('$(BepInExCore)')">$(AppData)\r2modmanPlus-local\Valheim\profiles\Jan2026\BepInEx\core</BepInExCore>
+    <BepInExCore Condition="!Exists('$(BepInExCore)')">$(ValheimPath)\BepInEx\core</BepInExCore>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCore)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExCore)\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_valheim">
+      <HintPath Condition="Exists('$(ValheimPath)\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll')">$(ValheimPath)\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath>
+      <HintPath Condition="!Exists('$(ValheimPath)\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll')">$(ValheimPath)\valheim_Data\Managed\assembly_valheim.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="assembly_guiutils">
+      <HintPath Condition="Exists('$(ValheimPath)\valheim_Data\Managed\publicized_assemblies\assembly_guiutils_publicized.dll')">$(ValheimPath)\valheim_Data\Managed\publicized_assemblies\assembly_guiutils_publicized.dll</HintPath>
+      <HintPath Condition="!Exists('$(ValheimPath)\valheim_Data\Managed\publicized_assemblies\assembly_guiutils_publicized.dll')">$(ValheimPath)\valheim_Data\Managed\assembly_guiutils.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(ValheimPath)\valheim_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(ValheimPath)\valheim_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(ValheimPath)\valheim_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

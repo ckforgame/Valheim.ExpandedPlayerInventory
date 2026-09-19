@@ -1,0 +1,97 @@
+﻿using HarmonyLib;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+
+namespace ExpandedPlayerInventory
+{
+    [HarmonyPatch(typeof(Player), nameof(Player.SetInventorySize))]
+    public static class Player_SetInventorySize_Patch
+    {
+        private static readonly MethodInfo Method_Inventory_SetHeight =
+            AccessTools.Method(typeof(Inventory), nameof(Inventory.SetHeight));
+
+        private static readonly MethodInfo Method_InventoryGui_SetInventorySize =
+            AccessTools.Method(typeof(InventoryGui), nameof(InventoryGui.SetInventorySize));
+
+        private static readonly MethodInfo Method_AtLeastConfigured =
+            AccessTools.Method(typeof(Player_SetInventorySize_Patch), nameof(AtLeastConfigured));
+
+        private static readonly MethodInfo Method_GuiRows =
+            AccessTools.Method(typeof(Player_SetInventorySize_Patch), nameof(GuiRows));
+
+        public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
+        {
+            if (ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value <= 4)
+            {
+                return instructions;
+            }
+
+            var il = instructions.ToList();
+            try
+            {
+                return new CodeMatcher(il)
+                    .MatchStartForward(new CodeMatch(i => i.Calls(Method_Inventory_SetHeight)))
+                    .ThrowIfNotMatch("No match for this.m_inventory.SetHeight(rows).")
+                    .InsertAndAdvance(new CodeInstruction(OpCodes.Call, Method_AtLeastConfigured))
+                    .MatchStartForward(new CodeMatch(i => i.Calls(Method_InventoryGui_SetInventorySize)))
+                    .ThrowIfNotMatch("No match for InventoryGui.instance.SetInventorySize(rows).")
+                    .InsertAndAdvance(new CodeInstruction(OpCodes.Call, Method_GuiRows))
+                    .InstructionEnumeration();
+            }
+            catch (Exception e)
+            {
+                ExpandedPlayerInventoryPlugin.Log.LogError($"Player_SetInventorySize_Patch failed: {e}");
+                return il;
+            }
+        }
+
+        public static int AtLeastConfigured(int rows)
+        {
+            return Math.Max(rows, ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value);
+        }
+
+        public static int GuiRows(int rows)
+        {
+            return Math.Min(6, AtLeastConfigured(rows));
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.Load))]
+    public static class Player_Load_Patch
+    {
+        public static void Prefix(Player __instance)
+        {
+            if (__instance == null || ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value <= 4) return;
+
+            var inventory = __instance.GetInventory();
+            int rows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
+            if (inventory.GetHeight() < rows)
+            {
+                inventory.SetHeight(rows);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
+    public static class Player_OnSpawned_Patch
+    {
+        public static void Postfix(Player __instance)
+        {
+            if (__instance == null || __instance != Player.m_localPlayer) return;
+            int configRows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
+            if (configRows <= 4) return;
+
+            var inventory = __instance.GetInventory();
+            int rows = Math.Max(inventory.GetHeight(), configRows);
+            inventory.SetHeight(rows);
+
+            if (InventoryGui.instance != null)
+            {
+                InventoryGui.instance.SetInventorySize(Math.Min(6, rows));
+            }
+        }
+    }
+}
