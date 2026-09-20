@@ -5,9 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [1.1.0] - 2026-09-20
 
 ### Added
-- **Configurable Mouse Wheel Scroll Sensitivity**: Added `scrollSensitivity` setting in `com.custom.expandedplayerinventory.cfg` (default `350`, range `50`–`1500`).
+- **Configurable Mouse Wheel Scroll Sensitivity**: Added `scrollSensitivity` setting in `ckforgame.ExpandedPlayerInventory.cfg` (default `350`, range `50`–`1500`).
   - Scrolling is now ~5x faster by default, allowing effortless navigation through large inventories without excessive wheel swiping.
   - Fully adjustable via configuration file or BepInEx Configuration Manager in-game.
+- **Valheim Community Standard Plugin GUID & Config**: Standardized Mod GUID to `ckforgame.ExpandedPlayerInventory` and configuration filename to `ckforgame.ExpandedPlayerInventory.cfg`. Automatically migrates settings from legacy `com.custom.expandedplayerinventory.cfg` on first run so existing configurations are seamlessly preserved.
 
 ### Fixed
 - **ValheimPlus Mod Conflict & Negative Viewport Bounds**: Resolved conflict where ValheimPlus resized the background frame (`m_player`) to the full configured row count (e.g. 20 rows / 990.5px). Stretch-anchored grids evaluated to a negative viewport height (`-566.0px`), causing `RectMask2D` to cull all inventory slots on first open:

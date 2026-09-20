@@ -11,7 +11,7 @@ A standalone Valheim BepInEx mod that expands player inventory rows (up to 50 ro
 
 ## Configuration
 
-Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinventory.cfg` after first launch:
+Configuration file is generated at `BepInEx/config/ckforgame.ExpandedPlayerInventory.cfg` after first launch:
 
 - `playerInventoryRows`: Number of player inventory rows (min 4, max 50, default 20).
 - `scrollSensitivity`: Mouse wheel scroll sensitivity (min 50, max 1500, default 350). Higher values scroll faster with less wheel movement.
@@ -42,6 +42,7 @@ Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinve
 
 - **v1.1.0**:
   - **Feature**: Added configurable mouse wheel `scrollSensitivity` (default `350`, range `50`–`1500`) for ~5x faster, effortless scrolling.
+  - **Feature**: Standardized plugin GUID and configuration filename to `ckforgame.ExpandedPlayerInventory.cfg` (with automatic migration from legacy config).
   - **Fix**: Resolved ValheimPlus mod conflict where container resizing caused negative viewport heights and culled item slots on first open.
   - **Fix**: Fixed repeated 20-row pop-in / flashing by restricting opening synchronization strictly to the first open of each world session.
   - **Fix**: Added runtime layout failsafes in `InventoryGui.Update` preventing item graphics from ever being culled while the canvas settles.

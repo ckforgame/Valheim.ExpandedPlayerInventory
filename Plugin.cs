@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -8,7 +10,7 @@ namespace ExpandedPlayerInventory
     [BepInPlugin(ModGuid, ModName, ModVersion)]
     public class ExpandedPlayerInventoryPlugin : BaseUnityPlugin
     {
-        public const string ModGuid = "com.custom.expandedplayerinventory";
+        public const string ModGuid = "ckforgame.ExpandedPlayerInventory";
         public const string ModName = "ExpandedPlayerInventory";
         public const string ModVersion = "1.1.0";
 
@@ -24,6 +26,23 @@ namespace ExpandedPlayerInventory
         {
             Instance = this;
             Log = Logger;
+
+            // Migrate configuration from legacy GUID if needed
+            string oldConfigPath = Path.Combine(Paths.ConfigPath, "com.custom.expandedplayerinventory.cfg");
+            string newConfigPath = Path.Combine(Paths.ConfigPath, $"{ModGuid}.cfg");
+            if (File.Exists(oldConfigPath) && !File.Exists(newConfigPath))
+            {
+                try
+                {
+                    File.Copy(oldConfigPath, newConfigPath);
+                    Log.LogInfo($"Migrated old configuration from '{oldConfigPath}' to '{newConfigPath}'.");
+                    Config.Reload();
+                }
+                catch (Exception ex)
+                {
+                    Log.LogWarning($"Failed to migrate old configuration: {ex.Message}");
+                }
+            }
 
             PlayerInventoryRows = Config.Bind(
                 "General",

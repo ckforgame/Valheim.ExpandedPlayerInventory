@@ -30,7 +30,7 @@ graph TD
 - **[Plugin.cs](Plugin.cs)**:
   - Mod entry point inheriting from `BaseUnityPlugin`.
   - Defines `ModGuid`, `ModName`, and `ModVersion`.
-  - Binds configuration entries (`playerInventoryRows`), persisting them to `BepInEx/config/com.custom.expandedplayerinventory.cfg`.
+  - Binds configuration entries (`playerInventoryRows`, `scrollSensitivity`), persisting them to `BepInEx/config/ckforgame.ExpandedPlayerInventory.cfg`.
   - Executes `Harmony.PatchAll()` on startup and `UnpatchSelf()` on destruction.
 - **[InventoryPatches.cs](InventoryPatches.cs)**:
   - Controls and expands the player's inventory height (rows) at the data layer.
