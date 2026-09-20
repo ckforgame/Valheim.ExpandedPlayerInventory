@@ -11,9 +11,10 @@ A standalone Valheim BepInEx mod that expands player inventory rows (up to 50 ro
 
 ## Configuration
 
-Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinventory.cfg` after first launch:
+Configuration file is generated at `BepInEx/config/ckforgame.ExpandedPlayerInventory.cfg` after first launch:
 
 - `playerInventoryRows`: Number of player inventory rows (min 4, max 50, default 20).
+- `scrollSensitivity`: Mouse wheel scroll sensitivity (min 50, max 1500, default 350). Higher values scroll faster with less wheel movement.
 
 ## Compatibility with ValheimPlus
 
@@ -26,6 +27,7 @@ Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinve
 
 > [!NOTE]
 > **First-Time Inventory Open (Empty Background)**:
+>
 > - **Issue**: When opening the inventory for the very first time after logging into a world or respawning, the item slots may occasionally not render, showing only the wooden background panel.
 > - **Temporary Workaround**: Simply close (`Tab` or `Esc`) and reopen the inventory once. All slots and items will render and scroll normally for the remainder of your session.
 
@@ -38,7 +40,13 @@ Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinve
 
 ## Changelog
 
-- **v1.0.4**: Definitive fix for first-time inventory open rendering bug — deferred clipping to after Animator transition; fixed compatibility with ValheimPlus and other inventory mods.
+- **v1.1.0**:
+  - **Feature**: Added configurable mouse wheel `scrollSensitivity` (default `350`, range `50`–`1500`) for ~5x faster, effortless scrolling.
+  - **Feature**: Standardized plugin GUID and configuration filename to `ckforgame.ExpandedPlayerInventory.cfg` (with automatic migration from legacy config).
+  - **Fix**: Resolved ValheimPlus mod conflict where container resizing caused negative viewport heights and culled item slots on first open.
+  - **Fix**: Fixed repeated 20-row pop-in / flashing by restricting opening synchronization strictly to the first open of each world session.
+  - **Fix**: Added runtime layout failsafes in `InventoryGui.Update` preventing item graphics from ever being culled while the canvas settles.
+- **v1.0.4**: Deferred clipping to after Animator transition; fixed compatibility with ValheimPlus and other inventory mods.
 - **v1.0.3**: Added known issues and temporary workaround documentation; improved canvas and clipping update handling during inventory opening animation.
 - **v1.0.2**: Fixed first-time inventory open render bug where slots were displaced off-screen and invisible until reopened.
 - **v1.0.1**: Initial release with standalone scrolling inventory and ValheimPlus compatibility guidance.

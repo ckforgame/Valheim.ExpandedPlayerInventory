@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2026-09-20
+
+### Added
+- **Configurable Mouse Wheel Scroll Sensitivity**: Added `scrollSensitivity` setting in `ckforgame.ExpandedPlayerInventory.cfg` (default `350`, range `50`–`1500`).
+  - Scrolling is now ~5x faster by default, allowing effortless navigation through large inventories without excessive wheel swiping.
+  - Fully adjustable via configuration file or BepInEx Configuration Manager in-game.
+- **Valheim Community Standard Plugin GUID & Config**: Standardized Mod GUID to `ckforgame.ExpandedPlayerInventory` and configuration filename to `ckforgame.ExpandedPlayerInventory.cfg`. Automatically migrates settings from legacy `com.custom.expandedplayerinventory.cfg` on first run so existing configurations are seamlessly preserved.
+
+### Fixed
+- **ValheimPlus Mod Conflict & Negative Viewport Bounds**: Resolved conflict where ValheimPlus resized the background frame (`m_player`) to the full configured row count (e.g. 20 rows / 990.5px). Stretch-anchored grids evaluated to a negative viewport height (`-566.0px`), causing `RectMask2D` to cull all inventory slots on first open:
+  - Added `InventoryGui_SetInventorySize_Patch` (`Priority.First`) to clamp background frame sizing to visible rows (maximum 6).
+  - Decoupled `m_playerGrid` and scrollbar from parent stretch anchors to fixed top anchors (`anchorMin.y = 1f, anchorMax.y = 1f, pivot.y = 1f`), guaranteeing positive viewport height (`+424.5px`) at all times.
+- **Repeated 20-Row Inventory Flashing on Open**: Fixed an issue where opening synchronization disabled `RectMask2D` on every single inventory open, briefly displaying all 20 unclipped rows across the screen for 2-3 frames:
+  - Opening synchronization and delayed clipping now strictly run once on the first open of each world session.
+  - Subsequent inventory opens in the same world session render instantly, smoothly, and cleanly with 6 rows and scrollbar already in place.
+  - Automatically resets session state on `Game.Logout`, `Game.Start`, and `InventoryGui.Awake`.
+- **First-Time Open Blank Background Failsafe**: Added continuous runtime check in `InventoryGui.Update` that immediately disables `RectMask2D` if viewport height is non-positive or tiny, preventing graphics from being culled during canvas layout initialization.
+
 ## [1.0.4] - 2026-09-19
 
 ### Fixed
