@@ -200,9 +200,9 @@ namespace ExpandedPlayerInventory
             scrollRect.verticalScrollbar = playerGrid.m_scrollbar;
             scrollRect.horizontal = false;
             scrollRect.vertical = true;
-            scrollRect.movementType = ScrollRect.MovementType.Clamped;
-            scrollRect.scrollSensitivity = playerGrid.m_elementSpace > 0f ? playerGrid.m_elementSpace : 70.5f;
-            scrollRect.inertia = false;
+            scrollRect.scrollSensitivity = ExpandedPlayerInventoryPlugin.ScrollSensitivity != null && ExpandedPlayerInventoryPlugin.ScrollSensitivity.Value > 0f
+                ? ExpandedPlayerInventoryPlugin.ScrollSensitivity.Value
+                : 350f;
             scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
 
             // Ensure ScrollRectEnsureVisible for gamepad support
@@ -384,6 +384,9 @@ namespace ExpandedPlayerInventory
                 ScrollRect sr = playerGridGo.GetComponent<ScrollRect>();
                 if (sr != null)
                 {
+                    sr.scrollSensitivity = ExpandedPlayerInventoryPlugin.ScrollSensitivity != null && ExpandedPlayerInventoryPlugin.ScrollSensitivity.Value > 0f
+                        ? ExpandedPlayerInventoryPlugin.ScrollSensitivity.Value
+                        : 350f;
                     sr.StopMovement();
                     sr.verticalNormalizedPosition = 1f;
                 }

@@ -16,6 +16,7 @@ namespace ExpandedPlayerInventory
         public static ManualLogSource Log { get; private set; } = null!;
 
         public static ConfigEntry<int> PlayerInventoryRows { get; private set; } = null!;
+        public static ConfigEntry<float> ScrollSensitivity { get; private set; } = null!;
 
         private Harmony _harmony = null!;
 
@@ -31,10 +32,17 @@ namespace ExpandedPlayerInventory
                 new ConfigDescription("Number of player inventory rows (min 4, max 50).", new AcceptableValueRange<int>(4, 50))
             );
 
+            ScrollSensitivity = Config.Bind(
+                "General",
+                "scrollSensitivity",
+                350f,
+                new ConfigDescription("Mouse wheel scroll sensitivity for player inventory (default 350, min 50, max 1500). Higher values scroll faster with less finger movement.", new AcceptableValueRange<float>(50f, 1500f))
+            );
+
             _harmony = new Harmony(ModGuid);
             _harmony.PatchAll();
 
-            Log.LogInfo($"{ModName} {ModVersion} loaded successfully! Configured rows: {PlayerInventoryRows.Value}");
+            Log.LogInfo($"{ModName} {ModVersion} loaded successfully! Configured rows: {PlayerInventoryRows.Value}, Scroll sensitivity: {ScrollSensitivity.Value}");
         }
 
         private void OnDestroy()
