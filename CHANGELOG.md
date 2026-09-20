@@ -4,11 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [1.0.5] - 2026-09-20
 
+### Added
+- **Configurable Mouse Wheel Scroll Sensitivity**: Added `scrollSensitivity` configuration option (default `350`, range `50`–`1500`). Scrolling is now 5x faster by default, allowing smooth navigation across inventory rows with minimal finger movement. Configurable via `com.custom.expandedplayerinventory.cfg` or in-game Configuration Manager.
+
 ### Fixed
-- **First-time inventory open bug (complete resolution)**: Permanently resolved the issue where item slots occasionally rendered as an empty wooden panel on first open or respawn:
-  - Removed premature UI setup triggers on player spawn/respawn (`Player.OnSpawned`) that were causing background clipping timeouts.
-  - Temporarily disabled `RectMask2D` during the Animator's zero-scale opening transition, guaranteeing that item slot graphics can never be culled as invisible.
-  - Synchronized `ScrollRect` bounds, top-aligned pivot, and `RectMask2D.PerformClipping()` once the panel achieves its usable scale during `InventoryGui.Update`.
+- **ValheimPlus Mod Conflict & Negative Bounds**: Resolved conflict where ValheimPlus's `playerInventoryRows` set the background frame to 20 rows (990.5px), causing stretch-anchored grids to calculate negative viewport heights (`-566.0px`) and cull all item slots:
+  - Added `InventoryGui_SetInventorySize_Patch` to clamp the UI container height to visible rows (maximum 6 rows), preventing other mods from blowing up the frame.
+  - Decoupled `gridRect` from parent vertical stretch anchors to fixed top anchors (`anchorMin.y = 1f, anchorMax.y = 1f, pivot.y = 1f`), guaranteeing positive height bounds (`+424.5px`) at all times.
+  - Aligned scrollbar anchors identically to ensure pixel-perfect positioning.
+- **World-Session Opening Optimization (No Flashing)**: Opening synchronization and delayed clipping now only run once on the very first open of each world session. All subsequent inventory opens in the same world keep the mask active and open cleanly, smoothly, and instantly with the scrollbar and 6 rows already rendered. Session state automatically resets on `Game.Logout`, `Game.Start`, and `InventoryGui.Awake`.
+- **First-Time Open Blank Background Bug**: Permanently resolved the first-time open issue by removing premature spawn triggers, temporarily disabling `RectMask2D` during the opening animation on first session open, and adding continuous runtime failsafes so item graphics can never be culled.
 
 ## [1.0.4] - 2026-09-19
 

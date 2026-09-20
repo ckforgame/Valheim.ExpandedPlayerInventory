@@ -40,7 +40,11 @@ Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinve
 
 ## Changelog
 
-- **v1.0.5**: Completely resolved first-time inventory open rendering bug — removed premature spawn triggers, guaranteed un-culled slot visibility during opening animation, and synchronized layout and clipping upon panel expansion.
+- **v1.0.5**:
+  - Added configurable mouse wheel `scrollSensitivity` (default 350, range 50–1500) for faster, effortless scrolling.
+  - Resolved ValheimPlus mod conflict by clamping `InventoryGui.SetInventorySize` to visible rows and decoupling grid from parent stretch anchors.
+  - Optimized opening behavior: initial synchronization only runs once per world session; subsequent opens are instant with zero flashing.
+  - Permanently fixed first-time open empty background bug with robust anchor stabilization and RectMask2D failsafes.
 - **v1.0.4**: Deferred clipping to after Animator transition; fixed compatibility with ValheimPlus and other inventory mods.
 - **v1.0.3**: Added known issues and temporary workaround documentation; improved canvas and clipping update handling during inventory opening animation.
 - **v1.0.2**: Fixed first-time inventory open render bug where slots were displaced off-screen and invisible until reopened.
