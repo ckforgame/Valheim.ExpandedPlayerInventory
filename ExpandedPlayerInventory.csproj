@@ -3,7 +3,7 @@
     <TargetFramework>net48</TargetFramework>
     <AssemblyName>ExpandedPlayerInventory</AssemblyName>
     <RootNamespace>ExpandedPlayerInventory</RootNamespace>
-    <Version>1.0.5</Version>
+    <Version>1.1.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

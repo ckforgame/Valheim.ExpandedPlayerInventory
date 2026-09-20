@@ -40,11 +40,11 @@ Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinve
 
 ## Changelog
 
-- **v1.0.5**:
-  - Added configurable mouse wheel `scrollSensitivity` (default 350, range 50–1500) for faster, effortless scrolling.
-  - Resolved ValheimPlus mod conflict by clamping `InventoryGui.SetInventorySize` to visible rows and decoupling grid from parent stretch anchors.
-  - Optimized opening behavior: initial synchronization only runs once per world session; subsequent opens are instant with zero flashing.
-  - Permanently fixed first-time open empty background bug with robust anchor stabilization and RectMask2D failsafes.
+- **v1.1.0**:
+  - **Feature**: Added configurable mouse wheel `scrollSensitivity` (default `350`, range `50`–`1500`) for ~5x faster, effortless scrolling.
+  - **Fix**: Resolved ValheimPlus mod conflict where container resizing caused negative viewport heights and culled item slots on first open.
+  - **Fix**: Fixed repeated 20-row pop-in / flashing by restricting opening synchronization strictly to the first open of each world session.
+  - **Fix**: Added runtime layout failsafes in `InventoryGui.Update` preventing item graphics from ever being culled while the canvas settles.
 - **v1.0.4**: Deferred clipping to after Animator transition; fixed compatibility with ValheimPlus and other inventory mods.
 - **v1.0.3**: Added known issues and temporary workaround documentation; improved canvas and clipping update handling during inventory opening animation.
 - **v1.0.2**: Fixed first-time inventory open render bug where slots were displaced off-screen and invisible until reopened.

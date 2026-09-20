@@ -2,18 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.5] - 2026-09-20
+## [1.1.0] - 2026-09-20
 
 ### Added
-- **Configurable Mouse Wheel Scroll Sensitivity**: Added `scrollSensitivity` configuration option (default `350`, range `50`–`1500`). Scrolling is now 5x faster by default, allowing smooth navigation across inventory rows with minimal finger movement. Configurable via `com.custom.expandedplayerinventory.cfg` or in-game Configuration Manager.
+- **Configurable Mouse Wheel Scroll Sensitivity**: Added `scrollSensitivity` setting in `com.custom.expandedplayerinventory.cfg` (default `350`, range `50`–`1500`).
+  - Scrolling is now ~5x faster by default, allowing effortless navigation through large inventories without excessive wheel swiping.
+  - Fully adjustable via configuration file or BepInEx Configuration Manager in-game.
 
 ### Fixed
-- **ValheimPlus Mod Conflict & Negative Bounds**: Resolved conflict where ValheimPlus's `playerInventoryRows` set the background frame to 20 rows (990.5px), causing stretch-anchored grids to calculate negative viewport heights (`-566.0px`) and cull all item slots:
-  - Added `InventoryGui_SetInventorySize_Patch` to clamp the UI container height to visible rows (maximum 6 rows), preventing other mods from blowing up the frame.
-  - Decoupled `gridRect` from parent vertical stretch anchors to fixed top anchors (`anchorMin.y = 1f, anchorMax.y = 1f, pivot.y = 1f`), guaranteeing positive height bounds (`+424.5px`) at all times.
-  - Aligned scrollbar anchors identically to ensure pixel-perfect positioning.
-- **World-Session Opening Optimization (No Flashing)**: Opening synchronization and delayed clipping now only run once on the very first open of each world session. All subsequent inventory opens in the same world keep the mask active and open cleanly, smoothly, and instantly with the scrollbar and 6 rows already rendered. Session state automatically resets on `Game.Logout`, `Game.Start`, and `InventoryGui.Awake`.
-- **First-Time Open Blank Background Bug**: Permanently resolved the first-time open issue by removing premature spawn triggers, temporarily disabling `RectMask2D` during the opening animation on first session open, and adding continuous runtime failsafes so item graphics can never be culled.
+- **ValheimPlus Mod Conflict & Negative Viewport Bounds**: Resolved conflict where ValheimPlus resized the background frame (`m_player`) to the full configured row count (e.g. 20 rows / 990.5px). Stretch-anchored grids evaluated to a negative viewport height (`-566.0px`), causing `RectMask2D` to cull all inventory slots on first open:
+  - Added `InventoryGui_SetInventorySize_Patch` (`Priority.First`) to clamp background frame sizing to visible rows (maximum 6).
+  - Decoupled `m_playerGrid` and scrollbar from parent stretch anchors to fixed top anchors (`anchorMin.y = 1f, anchorMax.y = 1f, pivot.y = 1f`), guaranteeing positive viewport height (`+424.5px`) at all times.
+- **Repeated 20-Row Inventory Flashing on Open**: Fixed an issue where opening synchronization disabled `RectMask2D` on every single inventory open, briefly displaying all 20 unclipped rows across the screen for 2-3 frames:
+  - Opening synchronization and delayed clipping now strictly run once on the first open of each world session.
+  - Subsequent inventory opens in the same world session render instantly, smoothly, and cleanly with 6 rows and scrollbar already in place.
+  - Automatically resets session state on `Game.Logout`, `Game.Start`, and `InventoryGui.Awake`.
+- **First-Time Open Blank Background Failsafe**: Added continuous runtime check in `InventoryGui.Update` that immediately disables `RectMask2D` if viewport height is non-positive or tiny, preventing graphics from being culled during canvas layout initialization.
 
 ## [1.0.4] - 2026-09-19
 
