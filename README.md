@@ -26,6 +26,7 @@ Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinve
 
 > [!NOTE]
 > **First-Time Inventory Open (Empty Background)**:
+>
 > - **Issue**: When opening the inventory for the very first time after logging into a world or respawning, the item slots may occasionally not render, showing only the wooden background panel.
 > - **Temporary Workaround**: Simply close (`Tab` or `Esc`) and reopen the inventory once. All slots and items will render and scroll normally for the remainder of your session.
 
@@ -38,7 +39,8 @@ Configuration file is generated at `BepInEx/config/com.custom.expandedplayerinve
 
 ## Changelog
 
-- **v1.0.4**: Definitive fix for first-time inventory open rendering bug — deferred clipping to after Animator transition; fixed compatibility with ValheimPlus and other inventory mods.
+- **v1.0.5**: Completely resolved first-time inventory open rendering bug — removed premature spawn triggers, guaranteed un-culled slot visibility during opening animation, and synchronized layout and clipping upon panel expansion.
+- **v1.0.4**: Deferred clipping to after Animator transition; fixed compatibility with ValheimPlus and other inventory mods.
 - **v1.0.3**: Added known issues and temporary workaround documentation; improved canvas and clipping update handling during inventory opening animation.
 - **v1.0.2**: Fixed first-time inventory open render bug where slots were displaced off-screen and invisible until reopened.
 - **v1.0.1**: Initial release with standalone scrolling inventory and ValheimPlus compatibility guidance.

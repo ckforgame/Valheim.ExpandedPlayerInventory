@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2026-09-20
+
+### Fixed
+- **First-time inventory open bug (complete resolution)**: Permanently resolved the issue where item slots occasionally rendered as an empty wooden panel on first open or respawn:
+  - Removed premature UI setup triggers on player spawn/respawn (`Player.OnSpawned`) that were causing background clipping timeouts.
+  - Temporarily disabled `RectMask2D` during the Animator's zero-scale opening transition, guaranteeing that item slot graphics can never be culled as invisible.
+  - Synchronized `ScrollRect` bounds, top-aligned pivot, and `RectMask2D.PerformClipping()` once the panel achieves its usable scale during `InventoryGui.Update`.
+
 ## [1.0.4] - 2026-09-19
 
 ### Fixed

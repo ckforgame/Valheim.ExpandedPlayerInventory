@@ -91,7 +91,27 @@ namespace ExpandedPlayerInventory
             if (InventoryGui.instance != null)
             {
                 InventoryGui.instance.SetInventorySize(Math.Min(6, rows));
-                InventoryGui_Show_Patch.EnsurePlayerInventoryScrollbar(InventoryGui.instance);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.SetInventorySize))]
+    public static class InventoryGui_SetInventorySize_Patch
+    {
+        [HarmonyPriority(Priority.First)]
+        public static void Prefix(InventoryGui __instance, ref int rows)
+        {
+            try
+            {
+                int configRows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
+                int visibleRows = Math.Min(6, Math.Max(4, configRows));
+                // Intercept any mod (such as ValheimPlus) or game call trying to expand m_player to 20 rows.
+                // Sizing the UI container beyond visible rows pushes the grid off-screen and corrupts viewport layout.
+                rows = visibleRows;
+            }
+            catch (Exception e)
+            {
+                ExpandedPlayerInventoryPlugin.Log.LogError($"InventoryGui_SetInventorySize_Patch error: {e}");
             }
         }
     }
