@@ -115,4 +115,22 @@ namespace ExpandedPlayerInventory
             }
         }
     }
+
+    [HarmonyPatch(typeof(Game), nameof(Game.Logout))]
+    public static class Game_Logout_Patch
+    {
+        public static void Prefix()
+        {
+            InventoryGui_Show_Patch._isWorldSessionInitialized = false;
+        }
+    }
+
+    [HarmonyPatch(typeof(Game), nameof(Game.Start))]
+    public static class Game_Start_Patch
+    {
+        public static void Prefix()
+        {
+            InventoryGui_Show_Patch._isWorldSessionInitialized = false;
+        }
+    }
 }

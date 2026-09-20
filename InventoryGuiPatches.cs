@@ -12,6 +12,11 @@ namespace ExpandedPlayerInventory
         {
             try
             {
+                InventoryGui_Show_Patch._isWorldSessionInitialized = false;
+                InventoryGui_Show_Patch._needsClippingRefresh = false;
+                InventoryGui_Show_Patch._openingFrames = 0;
+                InventoryGui_Show_Patch._hasRecordedBaseOffsets = false;
+
                 InventoryGui_Show_Patch.SetupScrollUI(__instance);
             }
             catch (Exception e)
@@ -140,7 +145,8 @@ namespace ExpandedPlayerInventory
                     mask.PerformClipping();
                 }
 
-                // Done - clear the flag
+                // Done - mark world session as initialized and clear the refresh flag
+                InventoryGui_Show_Patch._isWorldSessionInitialized = true;
                 InventoryGui_Show_Patch._needsClippingRefresh = false;
                 InventoryGui_Show_Patch._openingFrames = 0;
 
@@ -157,6 +163,7 @@ namespace ExpandedPlayerInventory
     [HarmonyPriority(Priority.Low)] // Run AFTER other mods' Show postfixes
     public static class InventoryGui_Show_Patch
     {
+        internal static bool _isWorldSessionInitialized = false;
         internal static bool _needsClippingRefresh = false;
         internal static int _openingFrames = 0;
         internal static bool _hasRecordedBaseOffsets = false;
@@ -381,14 +388,25 @@ namespace ExpandedPlayerInventory
                     sr.verticalNormalizedPosition = 1f;
                 }
 
-                // CRITICAL FOR FIRST-TIME OPEN / RESPAWN RENDERING:
-                // When the inventory is first shown, the Animator starts scaling up from zero.
-                // If RectMask2D performs clipping while scale is near zero, it calculates a 0-size
-                // (or tiny) clip rect and culls all slot graphics as invisible.
-                // By temporarily disabling the mask during the opening scale animation, graphics are
-                // NEVER culled. Once the panel reaches sufficient size, the mask is re-enabled and
-                // clips only genuinely offscreen slots.
                 RectMask2D mask = playerGridGo.GetComponent<RectMask2D>();
+
+                // SUBSEQUENT OPENS IN THE SAME WORLD SESSION:
+                // UI components, bounds, and mask are already permanently initialized.
+                // Keep the mask enabled and do NOT trigger opening synchronization.
+                // Opens cleanly and instantly with exactly 6 rows and scrollbar in place (no flashing!).
+                if (_isWorldSessionInitialized)
+                {
+                    if (mask != null)
+                    {
+                        mask.enabled = true;
+                    }
+                    _needsClippingRefresh = false;
+                    _openingFrames = 0;
+                    return;
+                }
+
+                // FIRST OPEN OF THE CURRENT WORLD SESSION:
+                // Perform initial opening synchronization to allow canvas layout and clipping to settle
                 if (mask != null)
                 {
                     mask.enabled = false;
@@ -398,7 +416,7 @@ namespace ExpandedPlayerInventory
                 _openingFrames = 0;
                 _needsClippingRefresh = true;
 
-                ExpandedPlayerInventoryPlugin.Log.LogInfo($"EnsurePlayerInventoryScrollbar: initialized for open, rows={Math.Max(inventory.GetHeight(), configRows)}");
+                ExpandedPlayerInventoryPlugin.Log.LogInfo($"EnsurePlayerInventoryScrollbar: initialized first-time open for world session, rows={Math.Max(inventory.GetHeight(), configRows)}");
             }
             catch (Exception e)
             {
