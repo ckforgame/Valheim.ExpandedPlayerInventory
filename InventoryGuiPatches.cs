@@ -1,5 +1,6 @@
 using HarmonyLib;
 using System;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,16 +13,35 @@ namespace ExpandedPlayerInventory
         {
             try
             {
-                InventoryGui_Show_Patch._isWorldSessionInitialized = false;
-                InventoryGui_Show_Patch._needsClippingRefresh = false;
-                InventoryGui_Show_Patch._openingFrames = 0;
-                InventoryGui_Show_Patch._hasRecordedBaseOffsets = false;
-
+                InventoryGui_Show_Patch.ResetSessionState();
                 InventoryGui_Show_Patch.SetupScrollUI(__instance);
             }
             catch (Exception e)
             {
                 ExpandedPlayerInventoryPlugin.Log.LogError($"InventoryGui_Awake_Patch error: {e}");
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Hide))]
+    public static class InventoryGui_Hide_Patch
+    {
+        public static void Prefix(InventoryGui __instance)
+        {
+            try
+            {
+                if (__instance != null && __instance.m_playerGrid != null)
+                {
+                    ScrollRect sr = __instance.m_playerGrid.GetComponent<ScrollRect>();
+                    if (sr != null)
+                    {
+                        InventoryGui_Show_Patch._savedScrollNormalizedPosition = Mathf.Clamp01(sr.verticalNormalizedPosition);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                ExpandedPlayerInventoryPlugin.Log.LogError($"InventoryGui_Hide_Patch error: {e}");
             }
         }
     }
@@ -52,31 +72,62 @@ namespace ExpandedPlayerInventory
                     mask.enabled = false;
                 }
 
-                if (!__instance.m_animator.GetBool("visible")) return;
+                bool isVisible = __instance.m_animator != null && __instance.m_animator.GetBool("visible");
+                if (!isVisible) return;
+
+                // Screen resolution or UI scale change detection
+                if (InventoryGui_Show_Patch._hasRecordedBaseOffsets)
+                {
+                    int screenW = Screen.width;
+                    int screenH = Screen.height;
+                    if (InventoryGui_Show_Patch._lastScreenWidth != 0 &&
+                        (InventoryGui_Show_Patch._lastScreenWidth != screenW || InventoryGui_Show_Patch._lastScreenHeight != screenH))
+                    {
+                        InventoryGui_Show_Patch._lastScreenWidth = screenW;
+                        InventoryGui_Show_Patch._lastScreenHeight = screenH;
+                        InventoryGui_Show_Patch._hasRecordedBaseOffsets = false;
+                        InventoryGui_Show_Patch.SetupScrollUI(__instance);
+                    }
+                    else
+                    {
+                        InventoryGui_Show_Patch._lastScreenWidth = screenW;
+                        InventoryGui_Show_Patch._lastScreenHeight = screenH;
+                    }
+                }
+
+                ScrollRect sr = playerGridGo.GetComponent<ScrollRect>();
+
+                // Track and remember scroll position continuously while inventory is open
+                if (sr != null && !InventoryGui_Show_Patch._needsClippingRefresh)
+                {
+                    InventoryGui_Show_Patch._savedScrollNormalizedPosition = Mathf.Clamp01(sr.verticalNormalizedPosition);
+                }
 
                 if (!InventoryGui_Show_Patch._needsClippingRefresh) return;
 
                 InventoryGui_Show_Patch._openingFrames++;
                 int frame = InventoryGui_Show_Patch._openingFrames;
 
-                ScrollRect sr = playerGridGo.GetComponent<ScrollRect>();
+                bool remember = ExpandedPlayerInventoryPlugin.RememberScrollPosition == null || ExpandedPlayerInventoryPlugin.RememberScrollPosition.Value;
+                float targetScroll = (remember && InventoryGui_Show_Patch._isWorldSessionInitialized)
+                    ? InventoryGui_Show_Patch._savedScrollNormalizedPosition
+                    : 1f;
 
-                // During initial opening frames, ensure scroll remains firmly clamped to top
+                // During initial opening frames, ensure scroll is held at target position
                 if (frame <= 3)
                 {
                     if (playerGrid.m_gridRoot != null)
                     {
                         playerGrid.m_gridRoot.pivot = new Vector2(playerGrid.m_gridRoot.pivot.x, 1f);
-                        playerGrid.m_gridRoot.anchoredPosition = Vector2.zero;
                     }
                     if (sr != null)
                     {
                         sr.StopMovement();
-                        sr.verticalNormalizedPosition = 1f;
+                        sr.verticalNormalizedPosition = targetScroll;
                     }
                     if (playerGrid.m_scrollbar != null)
                     {
-                        playerGrid.m_scrollbar.value = 1f;
+                        playerGrid.m_scrollbar.value = targetScroll;
                     }
                 }
 
@@ -117,25 +168,24 @@ namespace ExpandedPlayerInventory
                 // Authoritative finalization of layout and clipping:
                 InventoryGui_Show_Patch.EnsureScrollRect(__instance);
 
-                // Lock pivot and position
+                // Lock pivot
                 if (playerGrid.m_gridRoot != null)
                 {
                     playerGrid.m_gridRoot.pivot = new Vector2(playerGrid.m_gridRoot.pivot.x, 1f);
-                    playerGrid.m_gridRoot.anchoredPosition = Vector2.zero;
                 }
 
                 // Force canvas update so all transform matrices and layouts are up-to-date
                 Canvas.ForceUpdateCanvases();
 
-                // Finalize top scroll
+                // Finalize target scroll
                 if (sr != null)
                 {
                     sr.StopMovement();
-                    sr.verticalNormalizedPosition = 1f;
+                    sr.verticalNormalizedPosition = targetScroll;
                 }
                 if (playerGrid.m_scrollbar != null)
                 {
-                    playerGrid.m_scrollbar.value = 1f;
+                    playerGrid.m_scrollbar.value = targetScroll;
                 }
 
                 // Re-enable RectMask2D now that world-space rect is strictly valid, positive, and expanded
@@ -150,7 +200,7 @@ namespace ExpandedPlayerInventory
                 InventoryGui_Show_Patch._needsClippingRefresh = false;
                 InventoryGui_Show_Patch._openingFrames = 0;
 
-                ExpandedPlayerInventoryPlugin.Log.LogInfo($"Inventory opening synchronization completed at frame {frame} (scale={currentScaleY:F2}, worldHeight={worldHeight:F1})");
+                ExpandedPlayerInventoryPlugin.Log.LogInfo($"Inventory opening synchronization completed at frame {frame} (scale={currentScaleY:F2}, worldHeight={worldHeight:F1}, scroll={targetScroll:F2})");
             }
             catch (Exception e)
             {
@@ -169,6 +219,21 @@ namespace ExpandedPlayerInventory
         internal static bool _hasRecordedBaseOffsets = false;
         internal static float _baseGridTopOffset = -60f;
         internal static float _baseGridAnchoredX = 0f;
+
+        internal static float _savedScrollNormalizedPosition = 1f;
+        internal static int _lastScreenWidth = 0;
+        internal static int _lastScreenHeight = 0;
+
+        public static void ResetSessionState()
+        {
+            _isWorldSessionInitialized = false;
+            _needsClippingRefresh = false;
+            _openingFrames = 0;
+            _hasRecordedBaseOffsets = false;
+            _savedScrollNormalizedPosition = 1f;
+            _lastScreenWidth = 0;
+            _lastScreenHeight = 0;
+        }
 
         public static void Postfix(InventoryGui __instance)
         {
@@ -239,7 +304,6 @@ namespace ExpandedPlayerInventory
             // 2. Anchor stabilization: Record baseline offset and decouple gridRect from stretch anchors
             if (!_hasRecordedBaseOffsets)
             {
-                // Record top offset relative to parent top before altering anchors
                 _baseGridTopOffset = gridRect.offsetMax.y;
                 _baseGridAnchoredX = gridRect.anchoredPosition.x;
                 _hasRecordedBaseOffsets = true;
@@ -263,15 +327,28 @@ namespace ExpandedPlayerInventory
             // 4. Ensure Scrollbar
             if (playerGrid.m_scrollbar == null)
             {
-                Scrollbar templateScrollbar = gui.m_recipeListScroll
+                Scrollbar? templateScrollbar = gui.m_recipeListScroll
                     ?? gui.m_trophyListScroll
                     ?? gui.m_achievementsListScroll
                     ?? gui.m_containerGrid?.m_scrollbar
                     ?? gui.GetComponentInChildren<Scrollbar>(true);
 
+                if (templateScrollbar == null)
+                {
+                    // Fallback deep search across all loaded scrollbars in scene
+                    var allScrollbars = Resources.FindObjectsOfTypeAll<Scrollbar>();
+                    if (allScrollbars != null && allScrollbars.Length > 0)
+                    {
+                        templateScrollbar = allScrollbars.FirstOrDefault(sb => sb != null && sb.gameObject != null && sb.gameObject.scene.isLoaded);
+                    }
+                }
+
+                GameObject playerGridScroll;
+                Scrollbar scrollbar;
+
                 if (templateScrollbar != null)
                 {
-                    GameObject playerGridScroll = UnityEngine.Object.Instantiate(
+                    playerGridScroll = UnityEngine.Object.Instantiate(
                         templateScrollbar.gameObject,
                         playerGridGo.transform.parent,
                         false);
@@ -279,7 +356,7 @@ namespace ExpandedPlayerInventory
                     playerGridScroll.SetActive(true);
                     playerGridScroll.transform.SetAsLastSibling();
 
-                    Scrollbar scrollbar = playerGridScroll.GetComponent<Scrollbar>();
+                    scrollbar = playerGridScroll.GetComponent<Scrollbar>();
                     playerGrid.m_scrollbar = scrollbar;
                     scrollbar.interactable = true;
                     scrollbar.enabled = true;
@@ -291,33 +368,37 @@ namespace ExpandedPlayerInventory
                         Color c = graphic.color;
                         if (c.a < 0.2f) { c.a = 1f; graphic.color = c; }
                     }
-
-                    // Align scrollbar to the right side of m_player
-                    RectTransform? barRect = playerGridScroll.GetComponent<RectTransform>();
-                    if (barRect != null)
-                    {
-                        barRect.anchorMin = new Vector2(1f, 1f);
-                        barRect.anchorMax = new Vector2(1f, 1f);
-                        barRect.pivot = new Vector2(1f, 1f);
-
-                        float barWidth = 22f;
-                        barRect.sizeDelta = new Vector2(barWidth, visibleGridHeight);
-                        barRect.anchoredPosition = new Vector2(-15f, _baseGridTopOffset);
-
-                        // Ensure m_player wood frame is wide enough to enclose the scrollbar
-                        float requiredWidth = gridRect.rect.width + barWidth + 50f;
-                        if (gui.m_player != null && gui.m_player.rect.width < requiredWidth)
-                        {
-                            gui.m_player.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, requiredWidth);
-                        }
-                    }
-
-                    ExpandedPlayerInventoryPlugin.Log.LogInfo($"Player inventory scrollbar created successfully (configRows={configRows}, visibleRows={visibleRows})");
                 }
                 else
                 {
-                    ExpandedPlayerInventoryPlugin.Log.LogWarning("EnsurePlayerInventoryScrollbar: Could not find template scrollbar in InventoryGui.");
+                    // Programmatic fallback scrollbar
+                    ExpandedPlayerInventoryPlugin.Log.LogWarning("EnsurePlayerInventoryScrollbar: Template scrollbar not found; creating programmatic fallback scrollbar.");
+                    playerGridScroll = CreateProgrammaticScrollbar(playerGridGo.transform.parent);
+                    scrollbar = playerGridScroll.GetComponent<Scrollbar>();
+                    playerGrid.m_scrollbar = scrollbar;
                 }
+
+                // Align scrollbar to the right side of m_player
+                RectTransform? barRect = playerGridScroll.GetComponent<RectTransform>();
+                if (barRect != null)
+                {
+                    barRect.anchorMin = new Vector2(1f, 1f);
+                    barRect.anchorMax = new Vector2(1f, 1f);
+                    barRect.pivot = new Vector2(1f, 1f);
+
+                    float barWidth = 22f;
+                    barRect.sizeDelta = new Vector2(barWidth, visibleGridHeight);
+                    barRect.anchoredPosition = new Vector2(-15f, _baseGridTopOffset);
+
+                    // Ensure m_player wood frame is wide enough to enclose the scrollbar
+                    float requiredWidth = gridRect.rect.width + barWidth + 50f;
+                    if (gui.m_player != null && gui.m_player.rect.width < requiredWidth)
+                    {
+                        gui.m_player.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, requiredWidth);
+                    }
+                }
+
+                ExpandedPlayerInventoryPlugin.Log.LogInfo($"Player inventory scrollbar ready (configRows={configRows}, visibleRows={visibleRows})");
             }
             else
             {
@@ -336,9 +417,41 @@ namespace ExpandedPlayerInventory
                 }
             }
 
-            // 5. Always ensure ScrollRect + ScrollRectEnsureVisible exist,
-            // even if scrollbar was created by another mod (e.g. ValheimPlus)
+            // 5. Always ensure ScrollRect + ScrollRectEnsureVisible exist
             EnsureScrollRect(gui);
+        }
+
+        private static GameObject CreateProgrammaticScrollbar(Transform parent)
+        {
+            GameObject scrollbarObj = new GameObject("PlayerInventoryScrollbar", typeof(RectTransform), typeof(Image), typeof(Scrollbar));
+            scrollbarObj.transform.SetParent(parent, false);
+
+            Image bgImage = scrollbarObj.GetComponent<Image>();
+            bgImage.color = new Color(0f, 0f, 0f, 0.4f);
+
+            GameObject slidingArea = new GameObject("Sliding Area", typeof(RectTransform));
+            slidingArea.transform.SetParent(scrollbarObj.transform, false);
+            RectTransform slidingRect = slidingArea.GetComponent<RectTransform>();
+            slidingRect.anchorMin = Vector2.zero;
+            slidingRect.anchorMax = Vector2.one;
+            slidingRect.sizeDelta = Vector2.zero;
+
+            GameObject handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            handle.transform.SetParent(slidingArea.transform, false);
+            RectTransform handleRect = handle.GetComponent<RectTransform>();
+            handleRect.anchorMin = Vector2.zero;
+            handleRect.anchorMax = Vector2.one;
+            handleRect.sizeDelta = Vector2.zero;
+
+            Image handleImage = handle.GetComponent<Image>();
+            handleImage.color = new Color(0.8f, 0.7f, 0.5f, 0.8f);
+
+            Scrollbar sb = scrollbarObj.GetComponent<Scrollbar>();
+            sb.handleRect = handleRect;
+            sb.targetGraphic = handleImage;
+            sb.direction = Scrollbar.Direction.BottomToTop;
+
+            return scrollbarObj;
         }
 
         public static void EnsurePlayerInventoryScrollbar(InventoryGui gui)
@@ -368,17 +481,22 @@ namespace ExpandedPlayerInventory
                 // Pre-populate grid elements so m_gridRoot has its full size
                 playerGrid.UpdateInventory(inventory, localPlayer, gui.m_dragItem);
 
-                // Lock pivot to top immediately so hotbar starts at top
+                // Lock pivot to top immediately
                 if (playerGrid.m_gridRoot != null)
                 {
                     playerGrid.m_gridRoot.pivot = new Vector2(playerGrid.m_gridRoot.pivot.x, 1f);
-                    playerGrid.m_gridRoot.anchoredPosition = Vector2.zero;
                 }
 
-                // Ensure scrollbar and scrollrect start at top (1f)
+                // Determine target scroll position
+                bool remember = ExpandedPlayerInventoryPlugin.RememberScrollPosition == null || ExpandedPlayerInventoryPlugin.RememberScrollPosition.Value;
+                float targetScroll = (remember && _isWorldSessionInitialized)
+                    ? _savedScrollNormalizedPosition
+                    : 1f;
+
+                // Apply target scroll to scrollbar and scrollrect
                 if (playerGrid.m_scrollbar != null)
                 {
-                    playerGrid.m_scrollbar.value = 1f;
+                    playerGrid.m_scrollbar.value = targetScroll;
                 }
 
                 ScrollRect sr = playerGridGo.GetComponent<ScrollRect>();
@@ -388,7 +506,7 @@ namespace ExpandedPlayerInventory
                         ? ExpandedPlayerInventoryPlugin.ScrollSensitivity.Value
                         : 350f;
                     sr.StopMovement();
-                    sr.verticalNormalizedPosition = 1f;
+                    sr.verticalNormalizedPosition = targetScroll;
                 }
 
                 RectMask2D mask = playerGridGo.GetComponent<RectMask2D>();

@@ -12,13 +12,14 @@ namespace ExpandedPlayerInventory
     {
         public const string ModGuid = "ckforgame.ExpandedPlayerInventory";
         public const string ModName = "ExpandedPlayerInventory";
-        public const string ModVersion = "1.1.0";
+        public const string ModVersion = "1.2.0";
 
         public static ExpandedPlayerInventoryPlugin Instance { get; private set; } = null!;
         public static ManualLogSource Log { get; private set; } = null!;
 
         public static ConfigEntry<int> PlayerInventoryRows { get; private set; } = null!;
         public static ConfigEntry<float> ScrollSensitivity { get; private set; } = null!;
+        public static ConfigEntry<bool> RememberScrollPosition { get; private set; } = null!;
 
         private Harmony _harmony = null!;
 
@@ -58,10 +59,17 @@ namespace ExpandedPlayerInventory
                 new ConfigDescription("Mouse wheel scroll sensitivity for player inventory (default 350, min 50, max 1500). Higher values scroll faster with less finger movement.", new AcceptableValueRange<float>(50f, 1500f))
             );
 
+            RememberScrollPosition = Config.Bind(
+                "General",
+                "rememberScrollPosition",
+                true,
+                new ConfigDescription("Remember the last scroll position when opening the inventory, instead of always jumping back to the top.")
+            );
+
             _harmony = new Harmony(ModGuid);
             _harmony.PatchAll();
 
-            Log.LogInfo($"{ModName} {ModVersion} loaded successfully! Configured rows: {PlayerInventoryRows.Value}, Scroll sensitivity: {ScrollSensitivity.Value}");
+            Log.LogInfo($"{ModName} {ModVersion} loaded successfully! Configured rows: {PlayerInventoryRows.Value}, Scroll sensitivity: {ScrollSensitivity.Value}, Remember scroll position: {RememberScrollPosition.Value}");
         }
 
         private void OnDestroy()

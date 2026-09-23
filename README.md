@@ -2,6 +2,14 @@
 
 A standalone Valheim BepInEx mod that expands player inventory rows (up to 50 rows, default 20) with a built-in scrollbar and mouse-wheel scrolling support.
 
+## Known Issues & Workaround
+
+> [!NOTE]
+> **Occasional Blank Grid on Initial Open**:
+>
+> - **Symptom**: In certain environments or heavy modded setups, opening the inventory for the very first time after joining a world, respawning, or loading into a new area may occasionally display only the wooden background panel without the item slots rendering immediately.
+> - **Quick Solution**: Simply close (`Tab` or `Esc`) and reopen the inventory once. This forces the UI layout to synchronize, after which all item slots, graphics, and scrolling will render smoothly and normally for the remainder of your session.
+
 ## Features
 
 - Configurable player inventory rows (4 to 50 rows).
@@ -15,6 +23,7 @@ Configuration file is generated at `BepInEx/config/ckforgame.ExpandedPlayerInven
 
 - `playerInventoryRows`: Number of player inventory rows (min 4, max 50, default 20).
 - `scrollSensitivity`: Mouse wheel scroll sensitivity (min 50, max 1500, default 350). Higher values scroll faster with less wheel movement.
+- `rememberScrollPosition`: Remember the last scroll position when opening the inventory, instead of always jumping back to the top (default `true`).
 
 ## Compatibility with ValheimPlus
 
@@ -22,14 +31,6 @@ Configuration file is generated at `BepInEx/config/ckforgame.ExpandedPlayerInven
 > If you are using **ValheimPlus**, please ensure `inventoryRows` in your ValheimPlus configuration (`valheim_plus.cfg`) is set to **`4`** (the vanilla default) or leave the `[Player]` inventory expansion disabled.
 >
 > Letting ValheimPlus expand inventory rows simultaneously will conflict with this mod's scrollbar positioning and grid layout management. Use **ExpandedPlayerInventory**'s configuration to specify your desired rows instead.
-
-## Known Issues & Workaround
-
-> [!NOTE]
-> **First-Time Inventory Open (Empty Background)**:
->
-> - **Issue**: When opening the inventory for the very first time after logging into a world or respawning, the item slots may occasionally not render, showing only the wooden background panel.
-> - **Temporary Workaround**: Simply close (`Tab` or `Esc`) and reopen the inventory once. All slots and items will render and scroll normally for the remainder of your session.
 
 ## Installation
 
@@ -40,6 +41,12 @@ Configuration file is generated at `BepInEx/config/ckforgame.ExpandedPlayerInven
 
 ## Changelog
 
+- **v1.2.0**:
+  - **Feature**: Added **Scroll Position Memory** (`rememberScrollPosition`, default `true`), keeping your scroll view intact across inventory toggles and chest looting.
+  - **Feature**: Dynamic Resolution & UI Scale adaptation (automatically recalculates layouts upon settings changes without game restarts).
+  - **Reliability**: Added item safety defense-in-depth net in `Humanoid.DropInvalidItems` and `Player.SetInventorySize` to strictly prevent item dropping or loss.
+  - **Reliability**: Enhanced scrollbar template search with programmatic UI fallback.
+  - **Reliability**: Thorough session state reset on logout and world join.
 - **v1.1.0**:
   - **Feature**: Added configurable mouse wheel `scrollSensitivity` (default `350`, range `50`–`1500`) for ~5x faster, effortless scrolling.
   - **Feature**: Standardized plugin GUID and configuration filename to `ckforgame.ExpandedPlayerInventory.cfg` (with automatic migration from legacy config).

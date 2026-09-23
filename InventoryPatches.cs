@@ -43,8 +43,30 @@ namespace ExpandedPlayerInventory
             }
             catch (Exception e)
             {
-                ExpandedPlayerInventoryPlugin.Log.LogError($"Player_SetInventorySize_Patch failed: {e}");
+                ExpandedPlayerInventoryPlugin.Log.LogError($"Player_SetInventorySize_Patch transpiler failed: {e}");
                 return il;
+            }
+        }
+
+        /// <summary>
+        /// Defensive safety net: Ensures inventory height is never clamped down by game or other systems
+        /// even if the transpiler was bypassed or partially overridden.
+        /// </summary>
+        public static void Postfix(Player __instance)
+        {
+            if (__instance == null || ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value <= 4) return;
+            try
+            {
+                var inventory = __instance.GetInventory();
+                int configRows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
+                if (inventory != null && inventory.GetHeight() < configRows)
+                {
+                    inventory.SetHeight(configRows);
+                }
+            }
+            catch (Exception e)
+            {
+                ExpandedPlayerInventoryPlugin.Log.LogError($"Player_SetInventorySize_Patch Postfix error: {e}");
             }
         }
 
@@ -56,6 +78,35 @@ namespace ExpandedPlayerInventory
         public static int GuiRows(int rows)
         {
             return Math.Min(6, AtLeastConfigured(rows));
+        }
+    }
+
+    /// <summary>
+    /// Critical protection: Ensures player inventory height is fully expanded before Humanoid checks
+    /// for out-of-bounds items, preventing accidental item ejection/dropping upon loading or resizing.
+    /// </summary>
+    [HarmonyPatch(typeof(Humanoid), nameof(Humanoid.DropInvalidItems))]
+    public static class Humanoid_DropInvalidItems_Patch
+    {
+        [HarmonyPriority(Priority.First)]
+        public static void Prefix(Humanoid __instance)
+        {
+            try
+            {
+                if (__instance is Player player && ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value > 4)
+                {
+                    var inventory = player.GetInventory();
+                    int configRows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
+                    if (inventory != null && inventory.GetHeight() < configRows)
+                    {
+                        inventory.SetHeight(configRows);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                ExpandedPlayerInventoryPlugin.Log.LogError($"Humanoid_DropInvalidItems_Patch error: {e}");
+            }
         }
     }
 
@@ -104,6 +155,8 @@ namespace ExpandedPlayerInventory
             try
             {
                 int configRows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
+                if (configRows <= 4) return;
+
                 int visibleRows = Math.Min(6, Math.Max(4, configRows));
                 // Intercept any mod (such as ValheimPlus) or game call trying to expand m_player to 20 rows.
                 // Sizing the UI container beyond visible rows pushes the grid off-screen and corrupts viewport layout.
@@ -121,7 +174,7 @@ namespace ExpandedPlayerInventory
     {
         public static void Prefix()
         {
-            InventoryGui_Show_Patch._isWorldSessionInitialized = false;
+            InventoryGui_Show_Patch.ResetSessionState();
         }
     }
 
@@ -130,7 +183,7 @@ namespace ExpandedPlayerInventory
     {
         public static void Prefix()
         {
-            InventoryGui_Show_Patch._isWorldSessionInitialized = false;
+            InventoryGui_Show_Patch.ResetSessionState();
         }
     }
 }
