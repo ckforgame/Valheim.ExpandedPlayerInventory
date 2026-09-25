@@ -115,13 +115,20 @@ namespace ExpandedPlayerInventory
     {
         public static void Prefix(Player __instance)
         {
-            if (__instance == null || ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value <= 4) return;
-
-            var inventory = __instance.GetInventory();
-            int rows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
-            if (inventory.GetHeight() < rows)
+            try
             {
-                inventory.SetHeight(rows);
+                if (__instance == null || ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value <= 4) return;
+
+                var inventory = __instance.GetInventory();
+                int rows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
+                if (inventory != null && inventory.GetHeight() < rows)
+                {
+                    inventory.SetHeight(rows);
+                }
+            }
+            catch (Exception e)
+            {
+                ExpandedPlayerInventoryPlugin.Log.LogError($"Player_Load_Patch error: {e}");
             }
         }
     }
@@ -131,17 +138,27 @@ namespace ExpandedPlayerInventory
     {
         public static void Postfix(Player __instance)
         {
-            if (__instance == null || __instance != Player.m_localPlayer) return;
-            int configRows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
-            if (configRows <= 4) return;
-
-            var inventory = __instance.GetInventory();
-            int rows = Math.Max(inventory.GetHeight(), configRows);
-            inventory.SetHeight(rows);
-
-            if (InventoryGui.instance != null)
+            try
             {
-                InventoryGui.instance.SetInventorySize(Math.Min(6, rows));
+                if (__instance == null || __instance != Player.m_localPlayer) return;
+                int configRows = ExpandedPlayerInventoryPlugin.PlayerInventoryRows.Value;
+                if (configRows <= 4) return;
+
+                var inventory = __instance.GetInventory();
+                if (inventory != null)
+                {
+                    int rows = Math.Max(inventory.GetHeight(), configRows);
+                    inventory.SetHeight(rows);
+
+                    if (InventoryGui.instance != null)
+                    {
+                        InventoryGui.instance.SetInventorySize(Math.Min(6, rows));
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                ExpandedPlayerInventoryPlugin.Log.LogError($"Player_OnSpawned_Patch error: {e}");
             }
         }
     }
@@ -174,7 +191,14 @@ namespace ExpandedPlayerInventory
     {
         public static void Prefix()
         {
-            InventoryGui_Show_Patch.ResetSessionState();
+            try
+            {
+                InventoryGui_Show_Patch.ResetSessionState();
+            }
+            catch (Exception e)
+            {
+                ExpandedPlayerInventoryPlugin.Log.LogError($"Game_Logout_Patch error: {e}");
+            }
         }
     }
 
@@ -183,7 +207,14 @@ namespace ExpandedPlayerInventory
     {
         public static void Prefix()
         {
-            InventoryGui_Show_Patch.ResetSessionState();
+            try
+            {
+                InventoryGui_Show_Patch.ResetSessionState();
+            }
+            catch (Exception e)
+            {
+                ExpandedPlayerInventoryPlugin.Log.LogError($"Game_Start_Patch error: {e}");
+            }
         }
     }
 }
