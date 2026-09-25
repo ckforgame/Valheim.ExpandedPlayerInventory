@@ -89,6 +89,12 @@ flowchart TD
 - **Invariant**: Never perform `GetComponent<RectTransform>()`, `GetComponent<RectMask2D>()`, or `GetComponent<ScrollRect>()` every frame.
 - **Rule**: Use the static cached references in `InventoryGui_Show_Patch` (`_cachedGridRect`, `_cachedMask`, `_cachedScrollRect`). Bail out immediately in `Update` if the inventory animator `visible` flag is false.
 
+### 7. Execution Rule
+Do NOT execute long PowerShell inspection scripts directly via inline `powershell -Command @"..."`.
+Instead, always follow these 2 steps:
+1. Write the script to a fixed file: `temp_inspect.ps1`
+2. Execute it using this exact command: `powershell -ExecutionPolicy Bypass -File temp_inspect.ps1`
+
 ---
 
 ## 5. Build, Test & Release Playbook
