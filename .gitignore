@@ -34,3 +34,6 @@ packages/
 .DS_Store
 Thumbs.db
 [Dd]esktop.ini
+
+# Temporary inspection scripts
+temp_inspect.ps1

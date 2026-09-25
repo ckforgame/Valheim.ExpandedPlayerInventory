@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-09-23
+
+### Added
+- **Scroll Position Memory**:
+  - The inventory now remembers its last scroll position across opens and chest interactions instead of abruptly snapping back to the top hotbar every time.
+  - Added `rememberScrollPosition` configuration setting (default `true`) allowing players to toggle this feature or keep classic top-reset behavior.
+- **Dynamic Resolution & UI Scale Auto-Adaptation**:
+  - Dynamically detects resolution, fullscreen/windowed toggles, and UI Scale adjustments in settings, automatically recalculating base offsets and viewport positioning without restarting the game.
+- **Item Safety Net (DropInvalidItems & SetInventorySize Guard)**:
+  - Added defensive guards preventing Valheim's internal `Humanoid.DropInvalidItems()` and `Player.SetInventorySize` from mistakenly ejecting or dropping items from rows 5–50 onto the ground during loading or state changes.
+- **Robust Fallback Scrollbar Component**:
+  - Enhanced template scrollbar discovery with multi-tier fallback and programmatic generation to guarantee reliable scrolling even when other mods alter the crafting UI hierarchy.
+- **Complete Session State Cleanup**:
+  - Enhanced session cleanup on `Game.Logout`, `Game.Start`, and `InventoryGui.Awake` to prevent any static state leaks between character switches or world reloads.
+
 ## [1.1.0] - 2026-09-20
 
 ### Added
